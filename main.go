@@ -31,7 +31,7 @@ func main() {
 
 	router := gin.Default()
 
-	albumAPI.SetupRoutes(router)
+	albumAPI.SetupRoutes(router, db)
 
 	router.Run("localhost:8080")
 }

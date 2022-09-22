@@ -1,33 +1,67 @@
 package album
 
 import (
+	"database/sql"
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+
+	Album "go-auth/internal/repository/album"
 )
 
-func SetupRoutes(router *gin.Engine) {
-	router.GET("/albums", listAlbums)
-	router.GET("/albums/:id", getAlbum)
-	router.POST("/albums", postAlbums)
+var db *sql.DB
+
+func SetupRoutes(router *gin.Engine, setupDb *sql.DB) {
+	db = setupDb
+
+	router.GET("/album/:id", getAlbum)
+	router.GET("/album", listAlbums)
+	router.POST("/album", postAlbum)
 }
 
 func listAlbums(ginCtx *gin.Context) {
-	ginCtx.IndentedJSON(http.StatusOK, make([]byte, 1)) //TODO: Hook up with model
+	albums, err := Album.List(db)
+	if err != nil {
+		log.Print(err)
+	}
+
+	ginCtx.IndentedJSON(http.StatusOK, albums)
 }
 
-func getAlbum(ginCtx *gin.Context) { //TODO: Hook up with model
-	ginCtx.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
+func getAlbum(ginCtx *gin.Context) {
+	idString := ginCtx.Params.ByName("id")
+	id, err := strconv.Atoi(idString)
+	id64 := int64(id)
+
+	if err != nil {
+		ginCtx.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid id"})
+		return
+	}
+	album, err := Album.GetByID(db, id64)
+
+	if err != nil {
+		log.Print(err)
+		ginCtx.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
+
+		return
+	}
+
+	ginCtx.IndentedJSON(http.StatusOK, album)
 }
 
-func postAlbums(ginCtx *gin.Context) {
-	/*
-		var newAlbum Album
-		if err := ginCtx.BindJSON(&newAlbum); err != nil {
-			fmt.Printf("Deserializing request failed: %v", err)
-			return
-		}
-	*/
-	ginCtx.IndentedJSON(http.StatusCreated, make([]byte, 1)) //TODO: Hook up with model
+func postAlbum(ginCtx *gin.Context) {
+	var newAlbum Album.Album
+	if err := ginCtx.BindJSON(&newAlbum); err != nil {
+		log.Printf("POST /album :: Deserializing Reques failed: %v", err)
+	}
+
+	id, err := Album.Add(db, newAlbum)
+	if err != nil {
+		log.Printf("%v", err)
+	}
+
+	ginCtx.IndentedJSON(http.StatusCreated, gin.H{"id": id})
 }
