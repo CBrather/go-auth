@@ -7,8 +7,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	adapter "github.com/gwatts/gin-adapter"
 	_ "github.com/lib/pq"
 
+	Middleware "go-auth/internal/api"
 	Album "go-auth/internal/repository/album"
 )
 
@@ -17,9 +19,10 @@ var db *sql.DB
 func SetupRoutes(router *gin.Engine, setupDb *sql.DB) {
 	db = setupDb
 
-	router.GET("/album/:id", getAlbum)
+	validateToken := adapter.Wrap(Middleware.EnsureValidToken())
+	router.GET("/album/:id", validateToken, getAlbum)
 	router.GET("/album", listAlbums)
-	router.POST("/album", postAlbum)
+	router.POST("/album", validateToken, Middleware.RequireScope("create:albums"), postAlbum)
 }
 
 func listAlbums(ginCtx *gin.Context) {
