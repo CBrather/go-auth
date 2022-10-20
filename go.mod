@@ -1,4 +1,4 @@
-module go-auth
+module github.com/CBrather/go-auth
 
 go 1.18
 

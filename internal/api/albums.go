@@ -1,4 +1,4 @@
-package album
+package api
 
 import (
 	"database/sql"
@@ -10,23 +10,23 @@ import (
 	adapter "github.com/gwatts/gin-adapter"
 	_ "github.com/lib/pq"
 
-	Middleware "go-auth/internal/api"
-	Album "go-auth/internal/repository/album"
+	"github.com/CBrather/go-auth/internal/api/middleware"
+	"github.com/CBrather/go-auth/internal/repositories/album"
 )
 
 var db *sql.DB
 
-func SetupRoutes(router *gin.Engine, setupDb *sql.DB) {
+func SetupAlbumRoutes(router *gin.Engine, setupDb *sql.DB) {
 	db = setupDb
 
-	validateToken := adapter.Wrap(Middleware.EnsureValidToken())
-	router.GET("/album/:id", validateToken, getAlbum)
-	router.GET("/album", listAlbums)
-	router.POST("/album", validateToken, Middleware.RequireScope("create:albums"), postAlbum)
+	validateToken := adapter.Wrap(middleware.EnsureValidToken())
+	router.GET("/album/:id", validateToken, middleware.RequireScope("read:albums"), getAlbum)
+	router.GET("/album", validateToken, middleware.RequireScope("read:albums"), listAlbums)
+	router.POST("/album", validateToken, middleware.RequireScope("create:albums"), postAlbum)
 }
 
 func listAlbums(ginCtx *gin.Context) {
-	albums, err := Album.List(db)
+	albums, err := album.List(db)
 	if err != nil {
 		log.Print(err)
 	}
@@ -43,7 +43,7 @@ func getAlbum(ginCtx *gin.Context) {
 		ginCtx.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid id"})
 		return
 	}
-	album, err := Album.GetByID(db, id64)
+	album, err := album.GetByID(db, id64)
 
 	if err != nil {
 		log.Print(err)
@@ -56,12 +56,12 @@ func getAlbum(ginCtx *gin.Context) {
 }
 
 func postAlbum(ginCtx *gin.Context) {
-	var newAlbum Album.Album
+	var newAlbum album.Album
 	if err := ginCtx.BindJSON(&newAlbum); err != nil {
 		log.Printf("POST /album :: Deserializing Reques failed: %v", err)
 	}
 
-	id, err := Album.Add(db, newAlbum)
+	id, err := album.Add(db, newAlbum)
 	if err != nil {
 		log.Printf("%v", err)
 	}

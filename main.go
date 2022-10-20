@@ -9,8 +9,9 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
-	albumAPI "go-auth/internal/api/album"
-	albumModel "go-auth/internal/repository/album"
+	"github.com/CBrather/go-auth/internal/repositories/album"
+
+	"github.com/CBrather/go-auth/internal/api"
 )
 
 func main() {
@@ -24,14 +25,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_, err = albumModel.ListByArtist(db, "John Coltrane")
+	_, err = album.ListByArtist(db, "John Coltrane")
 	if err != nil {
 		log.Printf("%v", err)
 	}
 
 	router := gin.Default()
 
-	albumAPI.SetupRoutes(router, db)
+	api.SetupAlbumRoutes(router, db)
 
 	router.Run("localhost:8080")
 }
