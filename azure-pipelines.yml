@@ -1,0 +1,52 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+      - azure-pipelines
+
+variables:
+  - name: GOBIN
+    value: not-set
+
+pool:
+  vmImage: "ubuntu-latest"
+
+steps:
+  - checkout: self
+    submodules: false
+    persistCredentials: true
+    displayName: checkout project
+
+  - task: GoTool@0
+    inputs:
+      version: "1.18"
+    displayName: install go
+
+  - script: |
+      set -a
+      GOPATH=$HOME/.go
+      GOBIN=$GOPATH/bin
+      echo "##vso[task.setvariable variable=GOBIN]$GOBIN"
+      echo "##vso[task.prependpath]$GOBIN"
+    displayName: set go env vars
+
+  - script: |
+      make test-coverage
+    displayName: "run tests"
+
+  - task: PublishTestResults@2
+    condition: succeededOrFailed()
+    inputs:
+      testRunner: JUnit
+      testResultsFiles: $(System.DefaultWorkingDirectory)/test/tests.xml
+    displayName: "publish test results"
+
+  - task: PublishCodeCoverageResults@1
+    inputs:
+      codeCoverageTool: Cobertura
+      summaryFileLocation: $(System.DefaultWorkingDirectory)/test/coverage*/coverage.xml
+    displayName: "publish code coverage report"
