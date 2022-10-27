@@ -17,23 +17,21 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 # Build
 .PHONY: build
 build: $(BIN) ; $(info $(M) building release...)
-		$(GO) build \
-			-ldflags '-X main.Version=$(VERSION) -X main.BuildDate=$(DATE)' \
-			-a -installsuffix cgo \
-			-tags release \
-			-o $(BIN)/main \
-			./cmd/main.go;
+	$(GO) build \
+		-ldflags '-X main.Version=$(VERSION) -X main.BuildDate=$(DATE)' \
+		-a -installsuffix cgo \
+		-tags release \
+		-o $(BIN)/main \
+		./cmd/main.go;
 
 .PHONY: release
 release: $(BIN) ; $(info $(M) building linux release...)
-	$Q $(foreach MODULE,$(MODULES), \
-    	$(info $(M) building $(shell basename $(MODULE))) \
-    	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build \
-			-a -installsuffix cgo \
-        	-ldflags '-X main.Version=$(VERSION) -X main.BuildDate=$(DATE) -s -w -extldflags "-static"'	\
-       		-tags release	\
-        	-o $(BIN)/$(shell basename $(MODULE)) $(MODULE);)
-
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build \
+		-ldflags '-X main.Version=$(VERSION) -X main.BuildDate=$(DATE) -s -w -extldflags "-static"' \
+		-a -installsuffix cgo \
+		-tags release \
+		-o $(BIN)/main \
+		./cmd/main.go;
 
 # Tools
 $(BIN):

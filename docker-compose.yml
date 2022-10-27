@@ -8,3 +8,24 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - 5432:5432
+    networks:
+      - go-auth
+
+  go-auth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    environment:
+      - DB_CONNECTION_STRING=host=db port=5432 dbname=recordings user=postgres password=postgres sslmode=disable
+      - AUTH_DOMAIN=https://dev-cebear.eu.auth0.com/
+      - AUTH_AUDIENCE=http://localhost:8080
+    networks:
+      - go-auth
+
+networks:
+  go-auth:
+    driver: bridge
