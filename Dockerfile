@@ -22,7 +22,5 @@ USER nobody:nobody
 COPY --from=builder /user/group /user/passwd /etc/
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY ./bin/main .
-COPY ./.env ./.env
-
 
 ENTRYPOINT ["/main"]
