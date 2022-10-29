@@ -1,0 +1,50 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "github-action" ]
+  pull_request:
+    branches: [ "github-action" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
+        
+    - name: Test
+      run: make test-coverage
+      
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2.2.0
+      with:
+        junit_files: "**/tests.xml"
+        
+    - name: Snyk
+      uses: snyk/actions@0.3.0
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+    - name: Build
+      run: make release
+
+    - name: Build and push docker image
+      uses: Azure/acr-build@v1
+      with:
+        service_principal: 825bd0fd-d4b1-4e68-99fa-f8f586065636
+        service_principal_password: $secrets.AZ_SERVICE_PRINCIPAL_PW
+        tenant: 2e9b01f2-73d0-40ec-8de9-f91f092ec372
+        registry: cebeardev
+        repository: go-auth
+        tag: 0.1.0-$GITHUB_RUN_NUMBE
+        branch: $GITHUB_REF_NAME
+        folder: .
