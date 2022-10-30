@@ -22,7 +22,9 @@ jobs:
         go-version: 1.18
         
     - name: Set Go Env vars
-      run: set -a GOPATH=$HOME/.go GOBIN=$GOPATH/bin
+      run: |
+        echo "GOPATH=$HOME/.go" >> $GITHUB_ENV
+        echo "GOBIN=$HOME/.go/bin >> $GITHUB_ENV
         
     - name: Test
       run: make test-coverage
