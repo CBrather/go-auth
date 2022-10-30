@@ -13,9 +13,6 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    env:
-      GOPATH: $HOME/.go
-      GOBIN: $HOME/.go/bin
     steps:
     - uses: actions/checkout@v3
 
@@ -23,6 +20,9 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: 1.18
+        
+    - name: Set Go Env vars
+      run: set -a GOPATH=$HOME/.go GOBIN=$GOPATH/bin
         
     - name: Test
       run: make test-coverage
