@@ -42,7 +42,7 @@ jobs:
     - name: Build
       run: make release
 
-    - name: Build and push docker image
+    - name: Build docker image
       uses: Azure/acr-build@v1
       with:
         service_principal: 825bd0fd-d4b1-4e68-99fa-f8f586065636
@@ -50,6 +50,6 @@ jobs:
         tenant: 2e9b01f2-73d0-40ec-8de9-f91f092ec372
         registry: cebeardev
         repository: go-auth
-        tag: 0.1.0-$GITHUB_RUN_NUMBE
+        tag: 0.1.0-$GITHUB_RUN_NUMBEr
         branch: $GITHUB_REF_NAME
         folder: .
