@@ -13,6 +13,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      GOPATH: $HOME/.go
+      GOBIN: $HOME/.go/bin
     steps:
     - uses: actions/checkout@v3
 
