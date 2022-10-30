@@ -24,7 +24,7 @@ jobs:
     - name: Set Go Env vars
       run: |
         echo "GOPATH=$HOME/.go" >> $GITHUB_ENV
-        echo "GOBIN=$HOME/.go/bin >> $GITHUB_ENV
+        echo "GOBIN=$HOME/.go/bin" >> $GITHUB_ENV
         
     - name: Test
       run: make test-coverage
