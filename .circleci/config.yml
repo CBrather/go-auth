@@ -2,6 +2,8 @@
 # See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 orbs:
+  azure-acr: circleci/azure-acr@0.2.1
+  docker: circleci/docker@2.1.4
   go: circleci/go@1.7.1
   snyk: snyk/snyk@1.4.0
 
@@ -18,6 +20,9 @@ jobs:
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
+      - docker/install-docker
+      - setup_remote_docker:
+          docker_layer_caching: false
       - go/install:
           cache-key: v1 
           version: '1.18'
@@ -48,6 +53,14 @@ jobs:
       - run:
           name: Build release
           command: make release
+      - azure-acr/build-and-push-image:
+          azure-sp-password: ACR_SP_SECRET 
+          azure-sp: ACR_SP_NAME 
+          azure-sp-tenant: ACR_SP_TENANT 
+          registry-name: cebeardev 
+          repo: go-auth 
+          tag: '0.1.0-${CIRCLE_BUILD_NUM}' 
+          login-server-name: cebeardev.azurecr.io 
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
