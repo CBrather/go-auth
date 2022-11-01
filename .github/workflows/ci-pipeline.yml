@@ -34,6 +34,11 @@ jobs:
       with:
         junit_files: "**/tests.xml"
         
+    - name: Snyk auth 
+      run: snyk auth
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        
     - name: Snyk
       uses: snyk/actions@0.3.0
       env:
