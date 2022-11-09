@@ -56,7 +56,7 @@ steps:
       serviceConnectionEndpoint: 'Snyk'
       testType: 'app'
       severityThreshold: 'high'
-      monitorWhen: 'always'
+      monitorWhen: 'never'
       failOnIssues: true
       projectName: 'go-auth'
       organization: 'cbrather'
