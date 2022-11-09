@@ -50,3 +50,25 @@ steps:
       codeCoverageTool: Cobertura
       summaryFileLocation: $(System.DefaultWorkingDirectory)/test/coverage*/coverage.xml
     displayName: "publish code coverage report"
+
+  - task: SnykSecurityScan@1
+    inputs:
+      serviceConnectionEndpoint: 'Snyk'
+      testType: 'app'
+      severityThreshold: 'high'
+      monitorWhen: 'always'
+      failOnIssues: true
+      projectName: 'go-auth'
+      organization: 'cbrather'
+
+  - script: |
+      make release
+    displayName: "compile release binaries"
+  
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'ACR Dev'
+      repository: 'go-auth'
+      command: 'buildAndPush'
+      Dockerfile: '**/Dockerfile'
+      tags: '0.1.0-$(Build.BuildId)' 
