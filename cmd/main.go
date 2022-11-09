@@ -17,7 +17,7 @@ import (
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatalf("Error loading the .env file: %v", err)
+		log.Printf("Error loading the .env file: %v, will execute with environment as-is", err)
 	}
 
 	db, err := sql.Open("postgres", os.Getenv("DB_CONNECTION_STRING"))
