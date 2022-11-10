@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-auth
+  namespace: 'iam'
+  annotations:
+    'helm.sh/hook': pre-install,pre-upgrade
+    'helm.sh/hook-weight': '005'
+    'helm.sh/hook-delete-policy': before-hook-creation
+data:
+  AUTH_DOMAIN: '{ { .Values.auth.domain } }'
+  AUTH_AUDIENCE: '{ { .Values.auth.audience } }'
+  DB_HOST: '{ { .Values.db.host } }'
+  DB_PORT: '{ { .Values.db.port } }'
+  DB_NAME: '{ { .Value.db.name } }'
+  DB_SSLMODE: '{ { .Values.db.sslmode } }'
