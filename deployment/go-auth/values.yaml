@@ -19,7 +19,7 @@ db:
   sslmode: require
 auth:
   domain: https://dev-cebear.eu.auth0.com/
-  audience: http://localhost:8080
+  audience: http://cebear-dev.westeurope.cloudapp.azure.com
 
 imagePullSecrets: []
 nameOverride: ""
