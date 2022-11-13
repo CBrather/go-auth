@@ -9,8 +9,11 @@ serviceName: go-auth
 image:
   repository: cebeardev.azurecr.io/go-auth
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.1.0-34"
+
+  # Locally this can be set manually
+  # In the build pipeline this will be overridden with the tag of the pushed
+  # docker image tag before publishing the helm chart
+  tag: "[[IMAGE_TAG]]"
 
 db:
   host: dev-db-postgres.postgres.database.azure.com
