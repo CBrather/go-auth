@@ -11,6 +11,8 @@ trigger:
 variables:
   - name: GOBIN
     value: not-set
+  - name: ImageTag
+    value: '0.1.0-$(Build.BuildId)'
 
 pool:
   vmImage: "ubuntu-latest"
@@ -71,4 +73,13 @@ steps:
       repository: 'go-auth'
       command: 'buildAndPush'
       Dockerfile: '**/Dockerfile'
-      tags: '0.1.0-$(Build.BuildId)' 
+      tags: $(ImageTag)
+
+  - script: |
+      sed -i 's/[[IMAGE_TAG]]/$(ImageTag)' $(System.DefaultWorkingDirectory)/deployment/helm/values.yaml
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: '$(System.DefaultWorkingDirectory)/deployment/helm'
+      artifact: 'helm-chart'
+      publishLocation: 'pipeline'
