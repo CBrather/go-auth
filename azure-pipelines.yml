@@ -76,7 +76,7 @@ steps:
       tags: $(ImageTag)
 
   - script: |
-      sed -i 's/[[IMAGE_TAG]]/$(ImageTag)' $(System.DefaultWorkingDirectory)/deployment/helm/values.yaml
+      sed -i 's/[[IMAGE_TAG]]/$(ImageTag)/' $(System.DefaultWorkingDirectory)/deployment/helm/values.yaml
 
   - task: PublishPipelineArtifact@1
     inputs:
