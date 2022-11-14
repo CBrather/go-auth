@@ -24,7 +24,6 @@ auth:
   domain: https://dev-cebear.eu.auth0.com/
   audience: http://cebear-dev.westeurope.cloudapp.azure.com
 
-imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
@@ -90,7 +89,5 @@ autoscaling:
   # targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
-
-tolerations: []
 
 affinity: {}
