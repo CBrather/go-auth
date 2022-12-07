@@ -11,6 +11,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/CBrather/go-auth/internal/api"
+	"github.com/CBrather/go-auth/internal/api/middleware"
 )
 
 func main() {
@@ -25,7 +26,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	router := gin.Default()
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.Use(middleware.JsonLoggerMiddleware())
 
 	api.SetupAlbumRoutes(router, db)
 	api.SetupProbeRoutes(router)
