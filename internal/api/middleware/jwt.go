@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,6 +13,7 @@ import (
 	"github.com/auth0/go-jwt-middleware/v2/jwks"
 	"github.com/auth0/go-jwt-middleware/v2/validator"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type CustomClaims struct {
@@ -38,7 +39,7 @@ func (c CustomClaims) HasScope(expectedScope string) bool {
 func EnsureValidToken() func(next http.Handler) http.Handler {
 	issuerURL, err := url.Parse(os.Getenv("AUTH_DOMAIN"))
 	if err != nil {
-		log.Fatalf("Failed to parse the issuer url: %v", err)
+		zap.L().Fatal("Failed to parse the issuer url: %v", zap.Error(err))
 	}
 
 	provider := jwks.NewCachingProvider(issuerURL, 5*time.Minute)
@@ -57,11 +58,11 @@ func EnsureValidToken() func(next http.Handler) http.Handler {
 	)
 
 	if err != nil {
-		log.Fatalf("Failed to set up the jwt validator")
+		zap.L().Fatal("Failed to set up the jwt validator", zap.Error(err))
 	}
 
 	errorHandler := func(res http.ResponseWriter, req *http.Request, err error) {
-		log.Printf("Encountered error while validating JWT: %v", err)
+		zap.L().Error("An error occurred during jwt validation", zap.Error(err))
 
 		res.Header().Set("Content-Type", "application/json")
 		res.WriteHeader(http.StatusUnauthorized)
@@ -84,6 +85,8 @@ func RequireScope(requiredScope string) func(ctx *gin.Context) {
 
 		claims := token.CustomClaims.(*CustomClaims)
 		if !claims.HasScope(requiredScope) {
+			zap.L().Info(fmt.Sprintf("Returning a 403, as actor %s is missing a required scope: %s", token.RegisteredClaims.ID, requiredScope))
+
 			ctx.AbortWithStatus(http.StatusForbidden)
 			return
 		}

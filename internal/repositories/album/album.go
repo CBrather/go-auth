@@ -3,7 +3,8 @@ package album
 import (
 	"database/sql"
 	"fmt"
-	"log"
+
+	"go.uber.org/zap"
 )
 
 type Album struct {
@@ -45,7 +46,7 @@ func List(db *sql.DB) ([]Album, error) {
 
 	rows, err := db.Query("SELECT * FROM album")
 	if err != nil {
-		log.Fatal(err)
+		zap.L().Error("Album Repository :: Querying all albums from the database failed", zap.Error(err))
 	}
 
 	defer rows.Close()
@@ -64,8 +65,6 @@ func List(db *sql.DB) ([]Album, error) {
 		return nil, fmt.Errorf("Album :: List :: Rows: %v", err)
 	}
 
-	log.Printf("Albums: %v", albums)
-
 	return albums, nil
 }
 
@@ -74,7 +73,7 @@ func ListByArtist(db *sql.DB, name string) ([]Album, error) {
 
 	rows, err := db.Query("SELECT * FROM album WHERE artist = $1", name)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	defer rows.Close()
@@ -92,8 +91,6 @@ func ListByArtist(db *sql.DB, name string) ([]Album, error) {
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("albumsByArtist %q: %v", name, err)
 	}
-
-	log.Printf("Albums: %v", albums)
 
 	return albums, nil
 }
