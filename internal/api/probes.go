@@ -3,14 +3,13 @@ package api
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
+	"github.com/go-chi/chi/v5"
 )
 
-func SetupProbeRoutes(router *gin.Engine) {
-	router.GET("/healthz", getHealth)
+func SetupProbeRoutes(router chi.Router) {
+	router.Get("/healthz", getHealth)
 }
 
-func getHealth(ginCtx *gin.Context) {
-	ginCtx.AbortWithStatus(http.StatusOK)
+func getHealth(w http.ResponseWriter, req *http.Request) {
+	w.Write([]byte{})
 }

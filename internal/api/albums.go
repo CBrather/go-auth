@@ -2,10 +2,12 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 	adapter "github.com/gwatts/gin-adapter"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
@@ -16,30 +18,50 @@ import (
 
 var db *sql.DB
 
-func SetupAlbumRoutes(router *gin.Engine, setupDb *sql.DB) {
-	db = setupDb
+func SetupAlbumRoutes(rootRouter *chi.Mux, newDb *sql.DB) {
+	db = newDb
 
-	validateToken := adapter.Wrap(middleware.EnsureValidToken())
-	router.GET("/album/:id", validateToken, middleware.RequireScope("read:albums"), getAlbum)
-	router.GET("/album", validateToken, middleware.RequireScope("read:albums"), listAlbums)
-	router.POST("/album", validateToken, middleware.RequireScope("create:albums"), postAlbum)
+	albumRouter := chi.NewRouter()
+	albumRouter.Use(middleware.EnsureValidToken())
+
+	albumRouter.With(middleware.RequireScope("read:albums")).Get("/", listAlbums)
+
+	rootRouter.Mount("/albums", albumRouter)
 }
 
-func listAlbums(ginCtx *gin.Context) {
+func listAlbums(w http.ResponseWriter, req *http.Request) {
 	albums, err := album.List(db)
 	if err != nil {
 		zap.L().Error("Failed to retrieve the list of albums.", zap.Error(err))
 
-		ginCtx.AbortWithStatus(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	zap.L().Info("Successfully retrieved a list of albums to return")
 
-	ginCtx.IndentedJSON(http.StatusOK, albums)
+	body, err := json.Marshal(albums)
+	if err != nil {
+		zap.L().Error("Failed to serialize list of albums", zap.Error(err))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
 }
 
-func getAlbum(ginCtx *gin.Context) {
+/*
+** Gin Starts Here
+ */
+
+func SetupAlbumRoutesGin(router *gin.Engine, setupDb *sql.DB) {
+	db = setupDb
+
+	validateToken := adapter.Wrap(middleware.EnsureValidToken())
+	router.GET("/album/:id", validateToken, middleware.RequireScopeGin("read:albums"), getAlbumGin)
+	router.POST("/album", validateToken, middleware.RequireScopeGin("create:albums"), postAlbumGin)
+}
+
+func getAlbumGin(ginCtx *gin.Context) {
 	idString := ginCtx.Params.ByName("id")
 	id, err := strconv.Atoi(idString)
 
@@ -60,7 +82,7 @@ func getAlbum(ginCtx *gin.Context) {
 	ginCtx.IndentedJSON(http.StatusOK, album)
 }
 
-func postAlbum(ginCtx *gin.Context) {
+func postAlbumGin(ginCtx *gin.Context) {
 	var newAlbum album.Album
 	if err := ginCtx.BindJSON(&newAlbum); err != nil {
 		return
