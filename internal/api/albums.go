@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -24,6 +25,7 @@ func SetupAlbumRoutes(rootRouter *chi.Mux, newDb *sql.DB) {
 	albumRouter := chi.NewRouter()
 	albumRouter.Use(middleware.EnsureValidToken())
 
+	albumRouter.With(middleware.RequireScope("read:albums")).Get("/{id}", getAlbum)
 	albumRouter.With(middleware.RequireScope("read:albums")).Get("/", listAlbums)
 
 	rootRouter.Mount("/albums", albumRouter)
@@ -34,7 +36,7 @@ func listAlbums(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		zap.L().Error("Failed to retrieve the list of albums.", zap.Error(err))
 
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
@@ -43,6 +45,38 @@ func listAlbums(w http.ResponseWriter, req *http.Request) {
 	body, err := json.Marshal(albums)
 	if err != nil {
 		zap.L().Error("Failed to serialize list of albums", zap.Error(err))
+
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
+}
+
+func getAlbum(w http.ResponseWriter, req *http.Request) {
+	idString := chi.URLParam(req, "id")
+	id, err := strconv.Atoi(idString)
+
+	if err != nil {
+		http.Error(w, "Invalid id provided", http.StatusBadRequest)
+		return
+	}
+
+	id64 := int64(id)
+	album, err := album.GetByID(db, id64)
+
+	if err != nil {
+		http.Error(w, "No album with that id was found", http.StatusNotFound)
+		return
+	}
+
+	body, err := json.Marshal(album)
+	if err != nil {
+		zap.L().Error(fmt.Sprintf("Failed to serialize the album with id %s", album.ID), zap.Error(err))
+
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -57,29 +91,7 @@ func SetupAlbumRoutesGin(router *gin.Engine, setupDb *sql.DB) {
 	db = setupDb
 
 	validateToken := adapter.Wrap(middleware.EnsureValidToken())
-	router.GET("/album/:id", validateToken, middleware.RequireScopeGin("read:albums"), getAlbumGin)
 	router.POST("/album", validateToken, middleware.RequireScopeGin("create:albums"), postAlbumGin)
-}
-
-func getAlbumGin(ginCtx *gin.Context) {
-	idString := ginCtx.Params.ByName("id")
-	id, err := strconv.Atoi(idString)
-
-	if err != nil {
-		ginCtx.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid id"})
-		return
-	}
-
-	id64 := int64(id)
-	album, err := album.GetByID(db, id64)
-
-	if err != nil {
-		ginCtx.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
-
-		return
-	}
-
-	ginCtx.IndentedJSON(http.StatusOK, album)
 }
 
 func postAlbumGin(ginCtx *gin.Context) {
