@@ -79,7 +79,30 @@ func EnsureValidToken() func(next http.Handler) http.Handler {
 	}
 }
 
-func RequireScope(requiredScope string) func(ctx *gin.Context) {
+func RequireScope(requiredScope string) func(next http.Handler) http.Handler {
+	// This returned func is the actual middleware created per route(r) by invoking RequireScope
+	return func(next http.Handler) http.Handler {
+
+		// This returned func is the handler invoked per request by the middleware
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			token := req.Context().Value(jwtmiddleware.ContextKey{}).(*validator.ValidatedClaims)
+			claims := token.CustomClaims.(*CustomClaims)
+
+			if !claims.HasScope(requiredScope) {
+				zap.L().Info(fmt.Sprintf("Subject %s is missing a required scope: %s", token.RegisteredClaims.Subject, requiredScope))
+
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte(`{"message":"Insufficient permissions."}`))
+
+				return
+			}
+
+			next.ServeHTTP(w, req)
+		})
+	}
+}
+
+func RequireScopeGin(requiredScope string) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
 		token := ctx.Request.Context().Value(jwtmiddleware.ContextKey{}).(*validator.ValidatedClaims)
 

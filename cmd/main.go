@@ -3,15 +3,19 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httplog"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 
 	"github.com/CBrather/go-auth/internal/api"
-	"github.com/CBrather/go-auth/internal/api/middleware"
+	ginMiddleware "github.com/CBrather/go-auth/internal/api/middleware"
 	"github.com/CBrather/go-auth/pkg/log"
 )
 
@@ -34,15 +38,32 @@ func main() {
 		zap.L().Fatal("Unable to open a Postgres connection", zap.Error(err))
 	}
 
-	router := gin.New()
-	router.Use(gin.Recovery())
-	router.Use(middleware.JsonLoggerMiddleware())
+	c := make(chan int)
 
+	go setupGin(db, c)
+	go setupChi(db, c)
+	<-c
+}
+
+func setupChi(db *sql.DB, c chan int) {
+	logger := httplog.NewLogger("go-auth", httplog.Options{JSON: true, Concise: true})
+	router := chi.NewRouter()
+
+	router.Use(httplog.RequestLogger(logger))
+	router.Use(middleware.Recoverer)
 	api.SetupAlbumRoutes(router, db)
 	api.SetupProbeRoutes(router)
 
-	err = router.Run("0.0.0.0:8080")
-	if err != nil {
-		zap.L().Fatal("Error on setting up HTTP server", zap.Error(err))
-	}
+	zap.L().Info("Chi listening on :8080")
+	http.ListenAndServe("0.0.0.0:8080", router)
+}
+
+func setupGin(db *sql.DB, c chan int) {
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.Use(ginMiddleware.JsonLoggerMiddleware())
+
+	api.SetupAlbumRoutesGin(router, db)
+
+	router.Run("0.0.0.0:8081")
 }
