@@ -12,7 +12,6 @@ import (
 	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
 	"github.com/auth0/go-jwt-middleware/v2/jwks"
 	"github.com/auth0/go-jwt-middleware/v2/validator"
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -99,21 +98,5 @@ func RequireScope(requiredScope string) func(next http.Handler) http.Handler {
 
 			next.ServeHTTP(w, req)
 		})
-	}
-}
-
-func RequireScopeGin(requiredScope string) func(ctx *gin.Context) {
-	return func(ctx *gin.Context) {
-		token := ctx.Request.Context().Value(jwtmiddleware.ContextKey{}).(*validator.ValidatedClaims)
-
-		claims := token.CustomClaims.(*CustomClaims)
-		if !claims.HasScope(requiredScope) {
-			zap.L().Info(fmt.Sprintf("Returning a 403, as actor %s is missing a required scope: %s", token.RegisteredClaims.ID, requiredScope))
-
-			ctx.AbortWithStatus(http.StatusForbidden)
-			return
-		}
-
-		ctx.Next()
 	}
 }

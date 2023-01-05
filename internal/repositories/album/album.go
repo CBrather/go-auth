@@ -14,15 +14,15 @@ type Album struct {
 	Price  float64 `json:"price"`
 }
 
-func Add(db *sql.DB, album Album) (int64, error) {
-	row := db.QueryRow("INSERT INTO album (title, artist, price) VALUES ($1, $2, $3) RETURNING id", album.Title, album.Artist, album.Price)
+func Add(db *sql.DB, newAlbum Album) (Album, error) {
+	insertRow := db.QueryRow("INSERT INTO album (title, artist, price) VALUES ($1, $2, $3) RETURNING id", newAlbum.Title, newAlbum.Artist, newAlbum.Price)
 
 	var id int64
-	if err := row.Scan(&id); err != nil {
-		return 0, fmt.Errorf("Album :: Add :: Insertion: %v", err)
+	if err := insertRow.Scan(&id); err != nil {
+		return Album{}, fmt.Errorf("Album :: Add :: Insertion: %v", err)
 	}
 
-	return id, nil
+	return GetByID(db, id)
 }
 
 func GetByID(db *sql.DB, id int64) (Album, error) {
@@ -30,7 +30,7 @@ func GetByID(db *sql.DB, id int64) (Album, error) {
 
 	row := db.QueryRow("SELECT * FROM album WHERE id = $1", id)
 
-	if err := row.Scan(&alb.ID, &alb.Artist, &alb.Title, &alb.Price); err != nil {
+	if err := row.Scan(&alb.ID, &alb.Title, &alb.Artist, &alb.Price); err != nil {
 		if err == sql.ErrNoRows {
 			return alb, fmt.Errorf("Album :: GetByID :: no album with id foung: %d", id)
 		}
