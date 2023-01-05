@@ -4,12 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi/v5"
-	adapter "github.com/gwatts/gin-adapter"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 
@@ -27,6 +26,7 @@ func SetupAlbumRoutes(rootRouter *chi.Mux, newDb *sql.DB) {
 
 	albumRouter.With(middleware.RequireScope("read:albums")).Get("/{id}", getAlbum)
 	albumRouter.With(middleware.RequireScope("read:albums")).Get("/", listAlbums)
+	albumRouter.With(middleware.RequireScope("create:albums")).Post("/", postAlbum)
 
 	rootRouter.Mount("/albums", albumRouter)
 }
@@ -83,27 +83,44 @@ func getAlbum(w http.ResponseWriter, req *http.Request) {
 	w.Write(body)
 }
 
-/*
-** Gin Starts Here
- */
-
-func SetupAlbumRoutesGin(router *gin.Engine, setupDb *sql.DB) {
-	db = setupDb
-
-	validateToken := adapter.Wrap(middleware.EnsureValidToken())
-	router.POST("/album", validateToken, middleware.RequireScopeGin("create:albums"), postAlbumGin)
-}
-
-func postAlbumGin(ginCtx *gin.Context) {
+func postAlbum(w http.ResponseWriter, req *http.Request) {
 	var newAlbum album.Album
-	if err := ginCtx.BindJSON(&newAlbum); err != nil {
+
+	rawRequestBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		zap.L().Warn("Unable to read bytes of the request body", zap.Error(err))
+
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	id, err := album.Add(db, newAlbum)
+	err = json.Unmarshal(rawRequestBody, &newAlbum)
 	if err != nil {
-		ginCtx.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "failed saving the requested album"})
+		zap.L().Info("Unable to deserialize request body to album", zap.Error(err))
+
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
 	}
 
-	ginCtx.IndentedJSON(http.StatusCreated, gin.H{"id": id})
+	addedAlbum, err := album.Add(db, newAlbum)
+	if err != nil {
+		zap.L().Error("Failed to save new album", zap.Error(err))
+		zap.L().Debug("Failed to save new album", zap.Any("struct", newAlbum))
+
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	serializedAlbum, err := json.Marshal(addedAlbum)
+	if err != nil {
+		zap.L().Error("Failed serializing new album after successful save", zap.Error(err))
+		zap.L().Debug("Failed serializing new album after successful save", zap.Any("struct", addedAlbum))
+
+		http.Error(w, "Internal Server Error occurred after the album was successfully saved", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(serializedAlbum)
 }

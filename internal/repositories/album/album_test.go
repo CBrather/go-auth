@@ -22,15 +22,18 @@ func TestShouldAddAlbum(t *testing.T) {
 		Price:  19.99,
 	}
 
-	expectedRows := sqlmock.NewRows([]string{"id"}).AddRow("1")
-	mock.ExpectQuery("INSERT INTO album").WithArgs(newAlbum.Title, newAlbum.Artist, newAlbum.Price).WillReturnRows(expectedRows)
+	expectedInsertRows := sqlmock.NewRows([]string{"id"}).AddRow("1")
+	mock.ExpectQuery("INSERT INTO album").WithArgs(newAlbum.Title, newAlbum.Artist, newAlbum.Price).WillReturnRows(expectedInsertRows)
 
-	id, err := album.Add(db, newAlbum)
+	expectedQueryRows := sqlmock.NewRows([]string{"id", "title", "artist", "price"}).AddRow("1", newAlbum.Title, newAlbum.Artist, newAlbum.Price)
+	mock.ExpectQuery("SELECT \\* FROM album WHERE id \\= \\$1").WithArgs(1).WillReturnRows(expectedQueryRows)
+
+	addedAlbum, err := album.Add(db, newAlbum)
 	if err != nil {
 		t.Errorf("Unexpected error testing album.Add: %v", err)
 	}
 
-	if id != 1 {
-		t.Errorf("Not all expectations were met:")
+	if addedAlbum.ID != "1" || addedAlbum.Artist != newAlbum.Artist || addedAlbum.Title != newAlbum.Title || addedAlbum.Price != newAlbum.Price {
+		t.Errorf("The returned album doesn't match the expected data")
 	}
 }
