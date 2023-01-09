@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/httplog"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
 	"github.com/CBrather/go-auth/internal/api"
@@ -45,8 +46,11 @@ func setupRoutes(db *sql.DB) {
 
 	router.Use(httplog.RequestLogger(logger))
 	router.Use(middleware.Recoverer)
-	api.SetupAlbumRoutes(router, db)
+
+	router.Handle("/metrics", promhttp.Handler())
 	api.SetupProbeRoutes(router)
+
+	api.SetupAlbumRoutes(router, db)
 
 	zap.L().Info("Server listening on :8080")
 	http.ListenAndServe("0.0.0.0:8080", router)
