@@ -22,7 +22,7 @@ build: $(BIN) ; $(info $(M) building release...)
 		-a -installsuffix cgo \
 		-tags release \
 		-o $(BIN)/main \
-		./cmd/main.go;
+		./cmd/go-auth/;
 
 .PHONY: release
 release: $(BIN) ; $(info $(M) building linux release...)
@@ -31,7 +31,7 @@ release: $(BIN) ; $(info $(M) building linux release...)
 		-a -installsuffix cgo \
 		-tags release \
 		-o $(BIN)/main \
-		./cmd/main.go;
+		./cmd/go-auth/;
 
 # Tools
 $(BIN):
