@@ -26,7 +26,7 @@ auth:
 otel:
   exporter:
     insecureMode: true
-    otlpEndpoint: grafana-agent-traces.telemetry.svc.cluster.local:12346
+    otlpEndpoint: grafana-agent-traces.telemetry.svc.cluster.local:4317
 
 nameOverride: ""
 fullnameOverride: ""
