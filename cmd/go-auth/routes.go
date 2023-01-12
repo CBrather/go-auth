@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
+
+	_ "github.com/lib/pq"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog"
-	_ "github.com/lib/pq"
+	"github.com/riandyrn/otelchi"
+
 	"go.uber.org/zap"
 
 	"github.com/CBrather/go-auth/internal/api"
@@ -16,10 +20,17 @@ import (
 
 func SetupHttpRoutes(db *sql.DB) {
 	logger := httplog.NewLogger("go-auth", httplog.Options{JSON: true, Concise: true})
+
+	traceShutdown := telemetry.InitTracer()
+	defer traceShutdown(context.Background())
+
 	router := chi.NewRouter()
 
-	router.Use(httplog.RequestLogger(logger))
-	router.Use(middleware.Recoverer)
+	router.Use(
+		otelchi.Middleware("go-auth", otelchi.WithChiRoutes(router)),
+		httplog.RequestLogger(logger),
+		middleware.Recoverer,
+	)
 
 	router.Handle("/metrics", telemetry.NewMetricsHandler())
 	api.SetupProbeRoutes(router)
