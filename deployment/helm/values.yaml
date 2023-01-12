@@ -23,6 +23,10 @@ db:
 auth:
   domain: https://dev-cebear.eu.auth0.com/
   audience: http://cebear-dev.westeurope.cloudapp.azure.com
+otel:
+  exporter:
+    insecureMode: true
+    otlpEndpoint: http://grafana-agent-traces.telemetry
 
 nameOverride: ""
 fullnameOverride: ""
